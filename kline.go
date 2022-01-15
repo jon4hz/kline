@@ -37,7 +37,10 @@ type Model struct {
 func (m *Model) SetSize(width, height int) {
 	m.Width = width
 	m.Height = height
+	m.calculate()
+}
 
+func (m *Model) calculate() {
 	var maxPrice float64
 	var minPrice float64
 	m.visibleIndex = len(m.Klines) - m.Width
