@@ -47,7 +47,7 @@ func main() {
 		},
 	}
 
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if err := p.Start(); err != nil {
 		log.Fatalln(err)
 	}
@@ -55,7 +55,7 @@ func main() {
 
 func getData() ([]kline.Kline, error) {
 	c := binance.NewClient("", "")
-	klines, err := c.NewKlinesService().Symbol("BTCUSDC").Interval("5m").Do(context.Background())
+	klines, err := c.NewKlinesService().Symbol("BTCUSDC").Interval("1h").Do(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.kline.SetSize(msg.Width, msg.Height)
 
 	}
-	return m, nil
+	var cmd tea.Cmd
+	m.kline, cmd = m.kline.Update(msg)
+	return m, cmd
 }
 
 func (m model) View() string {

@@ -3,6 +3,7 @@ package kline
 import (
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -24,6 +25,14 @@ type Kline struct {
 	CloseTime time.Time
 }
 
+func New(data []Kline, width, height int) Model {
+	return Model{
+		Klines: data,
+		Width:  width,
+		Height: height,
+	}
+}
+
 type Model struct {
 	Width         int
 	Height        int
@@ -32,6 +41,7 @@ type Model struct {
 	minPrice      float64
 	pricePerBlock float64
 	visibleIndex  int
+	visibleOffset int
 }
 
 func (m *Model) SetSize(width, height int) {
@@ -44,10 +54,11 @@ func (m *Model) calculate() {
 	var maxPrice float64
 	var minPrice float64
 	m.visibleIndex = len(m.Klines) - m.Width
+	m.visibleIndex -= m.visibleOffset
 	if m.visibleIndex < 0 {
 		m.visibleIndex = 0
 	}
-	for i, c := range m.Klines[m.visibleIndex:] {
+	for i, c := range m.Klines[m.visibleIndex : len(m.Klines)-m.visibleOffset] {
 		if i == 0 {
 			minPrice = c.Low
 		}
@@ -65,9 +76,33 @@ func (m *Model) calculate() {
 	m.pricePerBlock = priceDelta / float64(m.Height)
 }
 
+func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.MouseMsg:
+		switch msg.Type {
+		case tea.MouseWheelDown:
+			m.visibleOffset++
+			if m.visibleOffset > len(m.Klines)-m.Width {
+				m.visibleOffset = len(m.Klines) - m.Width
+			}
+			m.calculate()
+			return m, nil
+
+		case tea.MouseWheelUp:
+			m.visibleOffset--
+			if m.visibleOffset < 0 {
+				m.visibleOffset = 0
+			}
+			m.calculate()
+			return m, nil
+		}
+	}
+	return m, nil
+}
+
 func (m Model) View() string {
 	var s []string
-	for _, c := range m.Klines[m.visibleIndex:] {
+	for _, c := range m.Klines[m.visibleIndex : len(m.Klines)-m.visibleOffset] {
 		if c.Open <= c.Close {
 			s = append(s, m.renderCandle(c, true))
 		} else {
