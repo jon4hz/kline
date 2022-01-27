@@ -41,7 +41,7 @@ type Model struct {
 	minPrice      float64
 	pricePerBlock float64
 	visibleIndex  int
-	visibleOffset int
+	XOffset       int
 }
 
 func (m *Model) SetSize(width, height int) {
@@ -54,11 +54,11 @@ func (m *Model) calculate() {
 	var maxPrice float64
 	var minPrice float64
 	m.visibleIndex = len(m.Klines) - m.Width
-	m.visibleIndex -= m.visibleOffset
+	m.visibleIndex -= m.XOffset
 	if m.visibleIndex < 0 {
 		m.visibleIndex = 0
 	}
-	for i, c := range m.Klines[m.visibleIndex : len(m.Klines)-m.visibleOffset] {
+	for i, c := range m.Klines[m.visibleIndex : len(m.Klines)-m.XOffset] {
 		if i == 0 {
 			minPrice = c.Low
 		}
@@ -81,17 +81,17 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.MouseMsg:
 		switch msg.Type {
 		case tea.MouseWheelDown:
-			m.visibleOffset++
-			if m.visibleOffset > len(m.Klines)-m.Width {
-				m.visibleOffset = len(m.Klines) - m.Width
+			m.XOffset++
+			if m.XOffset > len(m.Klines)-m.Width {
+				m.XOffset = len(m.Klines) - m.Width
 			}
 			m.calculate()
 			return m, nil
 
 		case tea.MouseWheelUp:
-			m.visibleOffset--
-			if m.visibleOffset < 0 {
-				m.visibleOffset = 0
+			m.XOffset--
+			if m.XOffset < 0 {
+				m.XOffset = 0
 			}
 			m.calculate()
 			return m, nil
@@ -102,7 +102,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 func (m Model) View() string {
 	var s []string
-	for _, c := range m.Klines[m.visibleIndex : len(m.Klines)-m.visibleOffset] {
+	for _, c := range m.Klines[m.visibleIndex : len(m.Klines)-m.XOffset] {
 		if c.Open <= c.Close {
 			s = append(s, m.renderCandle(c, true))
 		} else {
@@ -110,7 +110,8 @@ func (m Model) View() string {
 			s = append(s, m.renderCandle(c, false))
 		}
 	}
-	return lipgloss.JoinHorizontal(lipgloss.Top, s...)
+	body := lipgloss.JoinHorizontal(lipgloss.Top, s...)
+	return body
 }
 
 func (m Model) renderCandle(c Kline, green bool) string {
